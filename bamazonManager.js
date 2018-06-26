@@ -1,3 +1,5 @@
+
+
 var mysql = require("mysql");
 var inq = require("inquirer");
 var last_id = 0;
@@ -80,7 +82,7 @@ function updateStockQuantity(){
             message: "Which item that you want to update the quantity? Please enter the item ID.",
             validate: function(input){
                 input = parseInt(input);
-                return ! (isNaN(input)) || input > 0 || input <= last_id;
+                return ! (isNaN(input) || input <= 0 || input > last_id);
             }
         },
         {
@@ -88,7 +90,7 @@ function updateStockQuantity(){
             message: "How many do you want to add?",
             validate: function(input){
                 input = parseInt(input);
-                return ! (isNaN(input)) || input >= 0 || input < Infinity;
+                return ! (isNaN(input) || input < 0 || input > Infinity);
             }
         }
     ]).then(function(ans){

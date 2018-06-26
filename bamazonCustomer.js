@@ -1,11 +1,15 @@
+
+
 var mysql = require("mysql");
 var inq = require("inquirer");
-var last_id = 0;
+var last_id = 0;   // The id of last row in products table
 
+// MySql queries
 var show_query = "SELECT item_id,product_name,price FROM products";
 var update_quantity_query = "UPDATE products SET stock_quantity = stock_quantity - ? WHERE item_id = ?";
 var find_product_query = "SELECT product_name,price,stock_quantity FROM products WHERE item_id = ? AND stock_quantity >= ? ";
 
+// datebase connection info
 var mysql_con = mysql.createConnection({
     host: "localhost",
     port: 3306,
@@ -14,53 +18,59 @@ var mysql_con = mysql.createConnection({
     database: "bamazon"
 })
 
-
-function updateStockQuantity(id,quantity){
-    mysql_con.query(update_quantity_query,[quantity,id],function(err,results,fields){
+// reduce product's quantity in database
+function updateStockQuantity(id, quantity){
+    mysql_con.query(update_quantity_query, [quantity, id], (err, results, fields)=>{
         if(err) throw err;
     })
 }
 
+// print all products info 
 function showAllProducts(){
-    mysql_con.query(show_query,function(err, results, fields){
+    mysql_con.query(show_query, (err, results, fields)=>{
         if(err) throw err;
         console.log("-".repeat(100));
         console.log("ID"+" ".repeat(31)+ "Item Name"+ " ".repeat(24) + "Price" + " ".repeat(28));
         console.log("-".repeat(100));
         results.forEach(elem => {
-            var id = elem.item_id + " ".repeat(33-elem.item_id.toString().length);
-            var name = elem.product_name + " ".repeat(33-elem.product_name.length);
-            var price = elem.price + " ".repeat(33-elem.price.toString().length);
+            var id = elem.item_id + " ".repeat(33 - elem.item_id.toString().length);
+            var name = elem.product_name + " ".repeat(33 - elem.product_name.length);
+            var price = elem.price + " ".repeat(33 - elem.price.toString().length);
             console.log(id + name + price)
         });
-        console.log("-".repeat(100)+"\n\n");
+        console.log("-".repeat(100) + "\n\n");
 
-        last_id = results[results.length - 1].item_id;
+        // save the id of the last row in products table
+        last_id = results[results.length - 1].item_id;  
+        // Ask what user wants to do next
         handleUser();
-    })
-    
+    })   
 }
 
+// print out the user's order receipt
 function printReceipt(ans){
-    mysql_con.query(find_product_query, [ans.id,ans.quantity],function(err, results, fields){
+    mysql_con.query(find_product_query, [ans.id, ans.quantity],(err, results, fields)=>{
         if(err) throw err;
         if(results.length > 0){
             var r = results[0];
             var expression = "\n" + r.product_name + " ".repeat(20)+ "$" + r.price + " x " + ans.quantity;
             console.log(expression);
             console.log("-".repeat(expression.length));
-            var total = "Total: $" + (r.price*ans.quantity);
-            console.log(" ".repeat(expression.length - total.length)+total + "\n\n");
+            var total = "Total: $" + (r.price * ans.quantity);
+            console.log(" ".repeat(expression.length - total.length) + total + "\n\n");
 
-            updateStockQuantity(ans.id,ans.quantity);
+            // Update product's quantity
+            updateStockQuantity(ans.id, ans.quantity);
         }else{
             console.log("Insufficient quantity!\n\n");
         }
 
+        // Ask what user wants to do next
         handleUser();
     });
 }
 
+// ask which product that user wants to purchase
 function handleUser(){
     inq.prompt([
         {
@@ -68,7 +78,8 @@ function handleUser(){
             message: "Which product that you want to purchase? Please enter its ID.",
             validate: function(input){
                 input = parseInt(input);
-                return ! (isNaN(input)) || input > 0 || input <= last_id;
+                // User input needs to be integer and has to be a valid id
+                return ! (isNaN(input) || input > last_id || input <= 0);
             }
         },
         {
@@ -76,18 +87,18 @@ function handleUser(){
             message: "How many do you want to order?",
             validate: function(input){
                 input = parseInt(input);
-                return ! (isNaN(input)) || input >= 0 ;
+                // User input needs to be integer and cannot less than 0
+                return ! (isNaN(input) || input < 0 );
             }
-        }
-    
-    ]).then(function(ans){
+        }   
+    ]).then((ans)=>{
         printReceipt(ans);
     });
 }
 
-mysql_con.connect(function(err){
+// connect to database and start our application
+mysql_con.connect((err)=>{
     if(err) throw err;
     showAllProducts();
-
 })
 
