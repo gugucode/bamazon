@@ -2,6 +2,10 @@ var mysql = require("mysql");
 var inq = require("inquirer");
 var last_id = 0;
 
+var show_query = "SELECT item_id,product_name,price FROM products";
+var update_quantity_query = "UPDATE products SET stock_quantity = stock_quantity - ? WHERE item_id = ?";
+var find_product_query = "SELECT product_name,price,stock_quantity FROM products WHERE item_id = ? AND stock_quantity >= ? ";
+
 var mysql_con = mysql.createConnection({
     host: "localhost",
     port: 3306,
@@ -12,14 +16,12 @@ var mysql_con = mysql.createConnection({
 
 
 function updateStockQuantity(id,quantity){
-    var query = "UPDATE products SET stock_quantity = ? WHERE item_id = ?";
-    mysql_con.query(query,[quantity,id],function(err,results,fields){
+    mysql_con.query(update_quantity_query,[quantity,id],function(err,results,fields){
         if(err) throw err;
     })
 }
 
 function showAllProducts(){
-    var show_query = "SELECT item_id,product_name,price FROM products";
     mysql_con.query(show_query,function(err, results, fields){
         if(err) throw err;
         console.log("-".repeat(100));
@@ -40,10 +42,9 @@ function showAllProducts(){
 }
 
 function printReceipt(ans){
-    var query = "SELECT item_id,product_name,price,stock_quantity FROM products WHERE item_id = ? AND stock_quantity >= ? ";
-    mysql_con.query(query, [ans.id,ans.quantity],function(err, results, fields){
+    mysql_con.query(find_product_query, [ans.id,ans.quantity],function(err, results, fields){
         if(err) throw err;
-        if(results.length){
+        if(results.length > 0){
             var r = results[0];
             var expression = "\n" + r.product_name + " ".repeat(20)+ "$" + r.price + " x " + ans.quantity;
             console.log(expression);
@@ -51,7 +52,7 @@ function printReceipt(ans){
             var total = "Total: $" + (r.price*ans.quantity);
             console.log(" ".repeat(expression.length - total.length)+total + "\n\n");
 
-            updateStockQuantity(ans.id, r.stock_quantity - ans.quantity);
+            updateStockQuantity(ans.id,ans.quantity);
         }else{
             console.log("Insufficient quantity!\n\n");
         }
@@ -67,7 +68,7 @@ function handleUser(){
             message: "Which product that you want to purchase? Please enter its ID.",
             validate: function(input){
                 input = parseInt(input);
-                return ! (isNaN(input) || input <= 0 || input > last_id);
+                return ! (isNaN(input)) || input > 0 || input <= last_id;
             }
         },
         {
@@ -75,7 +76,7 @@ function handleUser(){
             message: "How many do you want to order?",
             validate: function(input){
                 input = parseInt(input);
-                return ! (isNaN(input) || input <= 0 );
+                return ! (isNaN(input)) || input >= 0 ;
             }
         }
     
