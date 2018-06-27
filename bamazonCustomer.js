@@ -1,6 +1,7 @@
 
 
 var mysql = require("mysql");
+var mysql_conf = require("./mysqlConf.js");
 var inq = require("inquirer");
 var last_id = 0;   // The id of last row in products table
 
@@ -10,13 +11,7 @@ var update_quantity_query = "UPDATE products SET stock_quantity = stock_quantity
 var find_product_query = "SELECT product_name,price,stock_quantity FROM products WHERE item_id = ? AND stock_quantity >= ? ";
 
 // datebase connection info
-var mysql_con = mysql.createConnection({
-    host: "localhost",
-    port: 3306,
-    user: "root",
-    password: "password",
-    database: "bamazon"
-})
+var mysql_con = mysql.createConnection(mysql_conf.mysql_obj)
 
 // reduce product's quantity in database
 function updateStockQuantity(id, quantity){
@@ -30,12 +25,12 @@ function showAllProducts(){
     mysql_con.query(show_query, (err, results, fields)=>{
         if(err) throw err;
         console.log("-".repeat(100));
-        console.log("ID"+" ".repeat(31)+ "Item Name"+ " ".repeat(24) + "Price" + " ".repeat(28));
+        console.log("ID"+" ".repeat(14)+ "Item Name"+ " ".repeat(45) + "Price" + " ".repeat(25));
         console.log("-".repeat(100));
         results.forEach(elem => {
-            var id = elem.item_id + " ".repeat(33 - elem.item_id.toString().length);
-            var name = elem.product_name + " ".repeat(33 - elem.product_name.length);
-            var price = elem.price + " ".repeat(33 - elem.price.toString().length);
+            var id = elem.item_id + " ".repeat(16 - elem.item_id.toString().length);
+            var name = elem.product_name + " ".repeat(54 - elem.product_name.length);
+            var price = elem.price + " ".repeat(30 - elem.price.toString().length);
             console.log(id + name + price)
         });
         console.log("-".repeat(100) + "\n\n");

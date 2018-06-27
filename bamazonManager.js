@@ -1,10 +1,10 @@
 
 
 var mysql = require("mysql");
+var mysql_conf = require("./mysqlConf.js");
 var inq = require("inquirer");
-var last_id = 0;
 
-
+// MySql queries
 var show_all_query = "SELECT item_id,product_name,price,stock_quantity FROM products";
 var addNewProduct_query = "INSERT INTO products (product_name,department_name,price,stock_quantity) VALUE (?,?,?,?)";
 var updateStockQuantity_query = "UPDATE products SET stock_quantity = stock_quantity+? WHERE item_id = ?";
@@ -12,38 +12,36 @@ var low_inventory_query = "SELECT item_id,product_name,price,stock_quantity FROM
 var search_by_id_query = "SELECT item_id,product_name,price,stock_quantity FROM products WHERE item_id = ?";
 var search_by_name_dep_query = "SELECT item_id,product_name,price,stock_quantity FROM products WHERE product_name = ? and department_name = ?";
 
-var mysql_con = mysql.createConnection({
-    host: "localhost",
-    port: 3306,
-    user: "root",
-    password: "password",
-    database: "bamazon"
-})
+// datebase connection 
+var mysql_con = mysql.createConnection(mysql_conf.mysql_obj)
 
+// add new product to products table
 function addProduct(ans){
-    mysql_con.query(search_by_name_dep_query,[ans.name,ans.department], function(err,results,fields){
+    mysql_con.query(search_by_name_dep_query, [ans.name, ans.department], (err, results,fields)=>{
         if(err) throw err;
-        if(results.length == 0){
-            mysql_con.query(addNewProduct_query,[ans.name,ans.department,ans.price,ans.quantity],function(err,results,fields){
+        if(results.length == 0){ // If the product doesn't exist, add it to the products table
+            mysql_con.query(addNewProduct_query,[ans.name,ans.department,ans.price,ans.quantity],(err,results,fields)=>{
                 if(err) throw err;
                 console.log("New product is added to database.")
                 var query = search_by_name_dep_query.replace("?","'" + ans.name + "'").replace("?","'" + ans.department + "'");
                 showAllProducts(query);
             })
-        }else{
-            console.log("This product is already existed.")
+        }else{ //Else, don't add the product and let the user know product exists.
+            console.log("The products table has already have this product.")
             printProducts(results);
             handleUser();
         }
     })
 }
 
+// Get product's info from user and save it.
 function addNewProduct(){
     inq.prompt([
         {
             name: "name",
             message: "What is the name of new product?",
-            validate: function(input){
+            validate: function(input){  
+                // product's name cannot be empty
                 return input != "";
             }
         },
@@ -58,6 +56,7 @@ function addNewProduct(){
             message: "What is the unit price of new product?",
             validate: function(input){
                 input = parseFloat(input);
+                // input has to be an integer and greater than or equal to 0
                 return ! (isNaN(input)) || input >= 0;
             }
         },
@@ -66,15 +65,17 @@ function addNewProduct(){
             message: "What is the quantity?",
             validate: function(input){
                 input = parseInt(input);
-                return ! isNaN(input) || input >= 0;
+                return ! (isNaN(input) || input < 0);
             }
         },
 
     ]).then(function(ans){
+        // add new product to database
         addProduct(ans);            
     })
 }
 
+// Update product's quantity
 function updateStockQuantity(){
     inq.prompt([
         {
@@ -82,7 +83,7 @@ function updateStockQuantity(){
             message: "Which item that you want to update the quantity? Please enter the item ID.",
             validate: function(input){
                 input = parseInt(input);
-                return ! (isNaN(input) || input <= 0 || input > last_id);
+                return ! (isNaN(input) || input <= 0);
             }
         },
         {
@@ -94,13 +95,15 @@ function updateStockQuantity(){
             }
         }
     ]).then(function(ans){
-            mysql_con.query(updateStockQuantity_query,[ans.new_quantity,ans.id],function(err,results,fields){
-                if(err) throw err;
-                showAllProducts(search_by_id_query.replace("?","'" + ans.id + "'"));
-            })
+        // use updateStockQuantity_query to add product's quantity 
+        mysql_con.query(updateStockQuantity_query,[ans.new_quantity,ans.id],(err,results,fields)=>{
+            if(err) throw err;
+            showAllProducts(search_by_id_query.replace("?","'" + ans.id + "'"));
+        })
     })
 }
 
+// print selected products 
 function printProducts(results){
     console.log("-".repeat(100));
     console.log("ID"+" ".repeat(14)+ "Item Name"+ " ".repeat(45) + "Price" + " ".repeat(10) + "Quantity" + " ".repeat(7));
@@ -113,20 +116,21 @@ function printProducts(results){
         console.log(id + name + price + quantity);
     });
     console.log("-".repeat(100)+"\n\n");
-
-    last_id = results[results.length - 1].item_id;
 }
 
 function showAllProducts(show_query){
-    mysql_con.query(show_query,function(err, results, fields){
+    mysql_con.query(show_query,(err, results, fields)=>{
         if(err) throw err;
         if(results.length > 0){
             printProducts(results);
-            handleUser();
+        }else{
+            console.log("Sorry, we cannot find the product.\n");
         }
+        handleUser();
     })
 }
 
+// Let manager/seller choose what they like to do
 function handleUser(){
     inq.prompt([
         {
@@ -135,7 +139,7 @@ function handleUser(){
             type: "list",
             choices: ["View Products for Sale", "View Low Inventory", "Add to Inventory", "Add New Product"],
         }
-    ]).then(function(ans){
+    ]).then((ans)=>{
         switch(ans.choice){
           case "View Products for Sale":
             showAllProducts(show_all_query);
@@ -153,7 +157,7 @@ function handleUser(){
     });
 }
 
-mysql_con.connect(function(err){
+mysql_con.connect((err)=>{
     if(err) throw err;
     showAllProducts(show_all_query);
 
