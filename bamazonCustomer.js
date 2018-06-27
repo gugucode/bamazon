@@ -1,5 +1,3 @@
-
-
 var mysql = require("mysql");
 var mysql_conf = require("./mysqlConf.js");
 var inq = require("inquirer");
