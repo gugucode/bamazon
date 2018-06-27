@@ -11,11 +11,11 @@ This is an Amazon-like command line project. It allows customer place order, pri
 * Install mySql 8.0 and start the mySql server. Run "mysql -u user_name -p < bamazon.sql" on terminal to create "bamazon" database and "products" table. Also, it will insert some dummy data into database for your test.
 * Modify host, port, user, and password in mysqlConf.js if they are different from yours. This file contains your database's access info.
 
-### How to use LIRI
+### How to use bamazon
 * **node bamazonCustomer.js**
     * This will print the id, name, and price of all products and ask customer what they want to buy.
     * After enter the product's id and quantity, it will print a receipt.
-    * If the product quantity is not enough, it will say "Insufficient quantity!"
+    * If the product's quantity is not enough, it will say "Insufficient quantity!".
     * Customer can hit "control + c" together to exit the program.
 
 ```
